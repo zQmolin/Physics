@@ -251,7 +251,7 @@ class PhysicsEngine {
         ));
       } else {
         results.add(BlockResult(
-          block: top, acceleration: Offset(0, 0),
+          block: top, acceleration: const Offset(0, 0),
           forces: [
             ForceInfo('重力 G', mT * g, const Offset(0, -1), Colors.purple),
             ForceInfo('支持力 N₁', mT * g, const Offset(0, 1), Colors.green),
@@ -347,23 +347,23 @@ class PhysicsEngine {
     final fK = scene.dynamicFriction * n;
     final forces = <ForceInfo>[
       ForceInfo('重力 G', weight, const Offset(0, -1), Colors.purple),
-      ForceInfo('支持力 N', n, const Offset(-math.sin(theta), math.cos(theta)), Colors.green),
+      ForceInfo('支持力 N', n, Offset(-math.sin(theta), math.cos(theta)), Colors.green), // 去掉了 const
     ];
     
     if (scene.showComponents) {
-      forces.add(ForceInfo('G沿斜面', gAlong, const Offset(math.cos(theta), -math.sin(theta)), Colors.purple.shade300));
-      forces.add(ForceInfo('G垂直', weight * math.cos(theta), const Offset(-math.sin(theta), -math.cos(theta)), Colors.purple.shade300));
+      forces.add(ForceInfo('G沿斜面', gAlong, Offset(math.cos(theta), -math.sin(theta)), Colors.purple.shade300)); // 去掉了 const
+      forces.add(ForceInfo('G垂直', weight * math.cos(theta), Offset(-math.sin(theta), -math.cos(theta)), Colors.purple.shade300)); // 去掉了 const
     }
     
     if (gAlong <= fMax && v.dx.abs() < 1e-4) {
-      forces.add(ForceInfo('静摩擦 f', gAlong, const Offset(-math.cos(theta), math.sin(theta)), Colors.orange));
+      forces.add(ForceInfo('静摩擦 f', gAlong, Offset(-math.cos(theta), math.sin(theta)), Colors.orange)); // 去掉了 const
       return BlockResult(
         block: b, forces: forces, acceleration: const Offset(0, 0), state: '静止在斜面',
         derivation: 'G∥=mgsinθ=${f1(gAlong)}N\nfmax=μsN=${f1(fMax)}N\nG∥ ≤ fmax，静止。f=G∥=${f1(gAlong)}N。',
       );
     }
     final a = g * (math.sin(theta) - scene.dynamicFriction * math.cos(theta));
-    forces.add(ForceInfo('滑动摩擦 f', fK, const Offset(-math.cos(theta), math.sin(theta)), Colors.red));
+    forces.add(ForceInfo('滑动摩擦 f', fK, Offset(-math.cos(theta), math.sin(theta)), Colors.red)); // 去掉了 const
     return BlockResult(
       block: b, forces: forces, acceleration: Offset(a, 0), state: a > 0 ? '加速下滑' : '减速',
       derivation: 'G∥=${f1(gAlong)}N > fmax=${f1(fMax)}N，下滑。\nf=μkN=${f1(fK)}N\na=g(sinθ−μcosθ)=${f1(a)}m/s²',
