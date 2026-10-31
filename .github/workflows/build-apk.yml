@@ -13,6 +13,8 @@ jobs:
         with:
           flutter-version: '3.24.0'
           channel: 'stable'
+      # 下面这行是新增的，用来生成缺失的 android 目录
+      - run: flutter create . --project-name physics_lab
       - run: flutter pub get
       - run: flutter build apk --release
       - uses: actions/upload-artifact@v4
