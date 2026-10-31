@@ -236,7 +236,6 @@ class PhysicsEngine {
           state: '随下物块一起运动',
           derivation: '整体：F−μ地(m₁+m₂)g=(m₁+m₂)a\na=($fExt−${f1(fKGround)})/${mT+mB}=${f1(a)}m/s²\nA所需摩擦 f₁=m₁a=${f1(fBetween.abs())}N ≤ μ间m₁g=${f1(scene.staticFriction * mT * g)}N，故一起运动。',
         ));
-        final fBottom = fExt - fBetween;
         results.add(BlockResult(
           block: bottom, acceleration: Offset(a, 0),
           forces: [
@@ -282,7 +281,6 @@ class PhysicsEngine {
     forces.add(ForceInfo('重力 G', weight, const Offset(0, -1), Colors.purple));
 
     double normal = weight;
-    double wallFriction = 0;
     
     if (scene.hasWall && b.position.dx + b.size / 2 >= scene.wallX - 0.05) {
       final wallNormal = scene.externalForce;
@@ -293,18 +291,22 @@ class PhysicsEngine {
       
       if (weight <= fMaxWall) {
         forces.add(ForceInfo('墙静摩擦', weight, const Offset(0, 1), Colors.orange));
-        return BlockResult(
-          block: b, forces: forces, acceleration: const Offset(0, 0),
-          state: '静止在墙面',
-          derivation: 'N=${f1(wallNormal)}N，fmax=μsN=${f1(fMaxWall)}N。\nG=${f1(weight)}N ≤ fmax，静止，f=G=${f1(weight)}N。',
-        );
+        return [
+          BlockResult(
+            block: b, forces: forces, acceleration: const Offset(0, 0),
+            state: '静止在墙面',
+            derivation: 'N=${f1(wallNormal)}N，fmax=μsN=${f1(fMaxWall)}N。\nG=${f1(weight)}N ≤ fmax，静止，f=G=${f1(weight)}N。',
+          )
+        ];
       } else {
         forces.add(ForceInfo('墙滑动摩擦', fKWall, const Offset(0, 1), Colors.orange));
-        return BlockResult(
-          block: b, forces: forces, acceleration: Offset(0, (weight - fKWall) / b.mass),
-          state: '沿墙下滑',
-          derivation: 'G=${f1(weight)}N > fmax=${f1(fMaxWall)}N，下滑。\nf=μkN=${f1(fKWall)}N。\na=(G−f)/m=${f1((weight - fKWall) / b.mass)}m/s²。',
-        );
+        return [
+          BlockResult(
+            block: b, forces: forces, acceleration: Offset(0, (weight - fKWall) / b.mass),
+            state: '沿墙下滑',
+            derivation: 'G=${f1(weight)}N > fmax=${f1(fMaxWall)}N，下滑。\nf=μkN=${f1(fKWall)}N。\na=(G−f)/m=${f1((weight - fKWall) / b.mass)}m/s²。',
+          )
+        ];
       }
     }
 
@@ -318,10 +320,12 @@ class PhysicsEngine {
         forces.add(ForceInfo('静摩擦 f', fExt.abs(), Offset(-fExt.sign, 0), Colors.orange));
         forces.add(ForceInfo('外力 F', fExt.abs(), Offset(fExt.sign, 0), Colors.blue));
       }
-      return BlockResult(
-        block: b, forces: forces, acceleration: const Offset(0, 0), state: '静止',
-        derivation: 'fmax=${f1(fMax)}N\n${fExt == 0 ? '无外力' : 'F=${f1(fExt.abs())}N ≤ fmax'}，物块静止，f=${f1(fExt.abs())}N。',
-      );
+      return [
+        BlockResult(
+          block: b, forces: forces, acceleration: const Offset(0, 0), state: '静止',
+          derivation: 'fmax=${f1(fMax)}N\n${fExt == 0 ? '无外力' : 'F=${f1(fExt.abs())}N ≤ fmax'}，物块静止，f=${f1(fExt.abs())}N。',
+        )
+      ];
     }
 
     final dir = v.dx.abs() > 1e-4 ? v.dx.sign : fExt.sign;
@@ -331,11 +335,13 @@ class PhysicsEngine {
     forces.add(ForceInfo('滑动摩擦 f', fK, Offset(friction.sign, 0), Colors.red));
     if (fExt != 0) forces.add(ForceInfo('外力 F', fExt.abs(), Offset(fExt.sign, 0), Colors.blue));
     
-    return BlockResult(
-      block: b, forces: forces, acceleration: Offset(a, 0),
-      state: a.abs() < 1e-3 ? '匀速滑动' : (a * dir > 0 ? '加速滑动' : '减速滑动'),
-      derivation: '滑动摩擦 f=μkN=${f1(fK)}N\n合力=${f1(fExt)}+(${f1(friction)})=${f1(fExt + friction)}N\na=合力/m=${f1(a)}m/s²',
-    );
+    return [
+      BlockResult(
+        block: b, forces: forces, acceleration: Offset(a, 0),
+        state: a.abs() < 1e-3 ? '匀速滑动' : (a * dir > 0 ? '加速滑动' : '减速滑动'),
+        derivation: '滑动摩擦 f=μkN=${f1(fK)}N\n合力=${f1(fExt)}+(${f1(friction)})=${f1(fExt + friction)}N\na=合力/m=${f1(a)}m/s²',
+      )
+    ];
   }
 
   BlockResult _incline(BlockModel b, Offset v) {
@@ -347,23 +353,23 @@ class PhysicsEngine {
     final fK = scene.dynamicFriction * n;
     final forces = <ForceInfo>[
       ForceInfo('重力 G', weight, const Offset(0, -1), Colors.purple),
-      ForceInfo('支持力 N', n, Offset(-math.sin(theta), math.cos(theta)), Colors.green), // 去掉了 const
+      ForceInfo('支持力 N', n, Offset(-math.sin(theta), math.cos(theta)), Colors.green),
     ];
     
     if (scene.showComponents) {
-      forces.add(ForceInfo('G沿斜面', gAlong, Offset(math.cos(theta), -math.sin(theta)), Colors.purple.shade300)); // 去掉了 const
-      forces.add(ForceInfo('G垂直', weight * math.cos(theta), Offset(-math.sin(theta), -math.cos(theta)), Colors.purple.shade300)); // 去掉了 const
+      forces.add(ForceInfo('G沿斜面', gAlong, Offset(math.cos(theta), -math.sin(theta)), Colors.purple.shade300));
+      forces.add(ForceInfo('G垂直', weight * math.cos(theta), Offset(-math.sin(theta), -math.cos(theta)), Colors.purple.shade300));
     }
     
     if (gAlong <= fMax && v.dx.abs() < 1e-4) {
-      forces.add(ForceInfo('静摩擦 f', gAlong, Offset(-math.cos(theta), math.sin(theta)), Colors.orange)); // 去掉了 const
+      forces.add(ForceInfo('静摩擦 f', gAlong, Offset(-math.cos(theta), math.sin(theta)), Colors.orange));
       return BlockResult(
         block: b, forces: forces, acceleration: const Offset(0, 0), state: '静止在斜面',
         derivation: 'G∥=mgsinθ=${f1(gAlong)}N\nfmax=μsN=${f1(fMax)}N\nG∥ ≤ fmax，静止。f=G∥=${f1(gAlong)}N。',
       );
     }
     final a = g * (math.sin(theta) - scene.dynamicFriction * math.cos(theta));
-    forces.add(ForceInfo('滑动摩擦 f', fK, Offset(-math.cos(theta), math.sin(theta)), Colors.red)); // 去掉了 const
+    forces.add(ForceInfo('滑动摩擦 f', fK, Offset(-math.cos(theta), math.sin(theta)), Colors.red));
     return BlockResult(
       block: b, forces: forces, acceleration: Offset(a, 0), state: a > 0 ? '加速下滑' : '减速',
       derivation: 'G∥=${f1(gAlong)}N > fmax=${f1(fMax)}N，下滑。\nf=μkN=${f1(fK)}N\na=g(sinθ−μcosθ)=${f1(a)}m/s²',
